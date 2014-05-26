@@ -811,7 +811,6 @@ int usb_wwan_resume(struct usb_serial *serial)
 	}
 
 	spin_lock_irq(&intfdata->susp_lock);
-	intfdata->suspended = 0;
 	for (i = 0; i < serial->num_ports; i++) {
 		/* walk all ports */
 		port = serial->port[i];
