@@ -1,9 +1,14 @@
 /*
- * Hibernation support specific for i386 - temporary page tables
+ *  linux/arch/unicore32/kernel/hibernate.c
  *
- * Distribute under GPLv2
+ * Code specific to PKUnity SoC and UniCore ISA
  *
- * Copyright (c) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
+ *	Copyright (C) 2001-2010 Guan Xuetao
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 
 #include <linux/gfp.h>
@@ -12,18 +17,16 @@
 
 #include <asm/page.h>
 #include <asm/pgtable.h>
-#include <asm/mmzone.h>
+#include <asm/pgalloc.h>
 #include <asm/sections.h>
+#include <asm/suspend.h>
 
-/* Defined in hibernate_asm_32.S */
-extern int restore_image(void);
+#include "mach/pm.h"
 
 /* Pointer to the temporary resume page tables */
 pgd_t *resume_pg_dir;
 
-/* The following three functions are based on the analogous code in
- * arch/x86/mm/init_32.c
- */
+struct swsusp_arch_regs swsusp_arch_regs_cpu0;
 
 /*
  * Create a middle page table on a resume-safe page and put a pointer to it in
@@ -35,19 +38,8 @@ static pmd_t *resume_one_md_table_init(pgd_t *pgd)
 	pud_t *pud;
 	pmd_t *pmd_table;
 
-#ifdef CONFIG_X86_PAE
-	pmd_table = (pmd_t *)get_safe_page(GFP_ATOMIC);
-	if (!pmd_table)
-		return NULL;
-
-	set_pgd(pgd, __pgd(__pa(pmd_table) | _PAGE_PRESENT));
-	pud = pud_offset(pgd, 0);
-
-	BUG_ON(pmd_table != pmd_offset(pud, 0));
-#else
 	pud = pud_offset(pgd, 0);
 	pmd_table = pmd_offset(pud, 0);
-#endif
 
 	return pmd_table;
 }
@@ -63,7 +55,7 @@ static pte_t *resume_one_page_table_init(pmd_t *pmd)
 		if (!page_table)
 			return NULL;
 
-		set_pmd(pmd, __pmd(__pa(page_table) | _PAGE_TABLE));
+		set_pmd(pmd, __pmd(__pa(page_table) | _PAGE_KERNEL_TABLE));
 
 		BUG_ON(page_table != pte_offset_kernel(pmd, 0));
 
@@ -99,30 +91,24 @@ static int resume_physical_mapping_init(pgd_t *pgd_base)
 			continue;
 
 		for (pmd_idx = 0; pmd_idx < PTRS_PER_PMD; pmd++, pmd_idx++) {
+			pte_t *max_pte;
+
 			if (pfn >= max_low_pfn)
 				break;
 
-			/* Map with big pages if possible, otherwise create
-			 * normal page tables.
+			/* Map with normal page tables.
 			 * NOTE: We can mark everything as executable here
 			 */
-			if (cpu_has_pse) {
-				set_pmd(pmd, pfn_pmd(pfn, PAGE_KERNEL_LARGE_EXEC));
-				pfn += PTRS_PER_PTE;
-			} else {
-				pte_t *max_pte;
+			pte = resume_one_page_table_init(pmd);
+			if (!pte)
+				return -ENOMEM;
 
-				pte = resume_one_page_table_init(pmd);
-				if (!pte)
-					return -ENOMEM;
+			max_pte = pte + PTRS_PER_PTE;
+			for (; pte < max_pte; pte++, pfn++) {
+				if (pfn >= max_low_pfn)
+					break;
 
-				max_pte = pte + PTRS_PER_PTE;
-				for (; pte < max_pte; pte++, pfn++) {
-					if (pfn >= max_low_pfn)
-						break;
-
-					set_pte(pte, pfn_pte(pfn, PAGE_KERNEL_EXEC));
-				}
+				set_pte(pte, pfn_pte(pfn, PAGE_KERNEL_EXEC));
 			}
 		}
 	}
@@ -132,14 +118,6 @@ static int resume_physical_mapping_init(pgd_t *pgd_base)
 
 static inline void resume_init_first_level_page_table(pgd_t *pg_dir)
 {
-#ifdef CONFIG_X86_PAE
-	int i;
-
-	/* Init entries of the first-level page table to the zero page */
-	for (i = 0; i < PTRS_PER_PGD; i++)
-		set_pgd(pg_dir + i,
-			__pgd(__pa(empty_zero_page) | _PAGE_PRESENT));
-#endif
 }
 
 int swsusp_arch_resume(void)
@@ -156,7 +134,7 @@ int swsusp_arch_resume(void)
 		return error;
 
 	/* We have got enough memory and from now on we cannot recover */
-	restore_image();
+	restore_image(resume_pg_dir, restore_pblist);
 	return 0;
 }
 
@@ -166,7 +144,17 @@ int swsusp_arch_resume(void)
 
 int pfn_is_nosave(unsigned long pfn)
 {
-	unsigned long nosave_begin_pfn = __pa_symbol(&__nosave_begin) >> PAGE_SHIFT;
-	unsigned long nosave_end_pfn = PAGE_ALIGN(__pa_symbol(&__nosave_end)) >> PAGE_SHIFT;
-	return (pfn >= nosave_begin_pfn) && (pfn < nosave_end_pfn);
+	unsigned long begin_pfn = __pa(&__nosave_begin) >> PAGE_SHIFT;
+	unsigned long end_pfn = PAGE_ALIGN(__pa(&__nosave_end)) >> PAGE_SHIFT;
+
+	return (pfn >= begin_pfn) && (pfn < end_pfn);
+}
+
+void save_processor_state(void)
+{
+}
+
+void restore_processor_state(void)
+{
+	local_flush_tlb_all();
 }
