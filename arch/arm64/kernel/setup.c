@@ -41,7 +41,7 @@
 #include <linux/memblock.h>
 #include <linux/of_fdt.h>
 #include <linux/of_platform.h>
-#include <linux/dma-mapping.h>
+#include <linux/personality.h>
 
 #include <asm/cputype.h>
 #include <asm/elf.h>
@@ -115,79 +115,18 @@ void __init early_print(const char *str, ...)
 	printk("%s", buf);
 }
 
-bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
-{
-	return phys_id == cpu_logical_map(cpu);
-}
+struct cpuinfo_arm64 {
+	struct cpu	cpu;
+	u32		reg_midr;
+};
 
-struct mpidr_hash mpidr_hash;
-#ifdef CONFIG_SMP
-/**
- * smp_build_mpidr_hash - Pre-compute shifts required at each affinity
- *			  level in order to build a linear index from an
- *			  MPIDR value. Resulting algorithm is a collision
- *			  free hash carried out through shifting and ORing
- */
-static void __init smp_build_mpidr_hash(void)
+static DEFINE_PER_CPU(struct cpuinfo_arm64, cpu_data);
+
+void cpuinfo_store_cpu(void)
 {
-	u32 i, affinity, fs[4], bits[4], ls;
-	u64 mask = 0;
-	/*
-	 * Pre-scan the list of MPIDRS and filter out bits that do
-	 * not contribute to affinity levels, ie they never toggle.
-	 */
-	for_each_possible_cpu(i)
-		mask |= (cpu_logical_map(i) ^ cpu_logical_map(0));
-	pr_debug("mask of set bits %#llx\n", mask);
-	/*
-	 * Find and stash the last and first bit set at all affinity levels to
-	 * check how many bits are required to represent them.
-	 */
-	for (i = 0; i < 4; i++) {
-		affinity = MPIDR_AFFINITY_LEVEL(mask, i);
-		/*
-		 * Find the MSB bit and LSB bits position
-		 * to determine how many bits are required
-		 * to express the affinity level.
-		 */
-		ls = fls(affinity);
-		fs[i] = affinity ? ffs(affinity) - 1 : 0;
-		bits[i] = ls - fs[i];
-	}
-	/*
-	 * An index can be created from the MPIDR_EL1 by isolating the
-	 * significant bits at each affinity level and by shifting
-	 * them in order to compress the 32 bits values space to a
-	 * compressed set of values. This is equivalent to hashing
-	 * the MPIDR_EL1 through shifting and ORing. It is a collision free
-	 * hash though not minimal since some levels might contain a number
-	 * of CPUs that is not an exact power of 2 and their bit
-	 * representation might contain holes, eg MPIDR_EL1[7:0] = {0x2, 0x80}.
-	 */
-	mpidr_hash.shift_aff[0] = MPIDR_LEVEL_SHIFT(0) + fs[0];
-	mpidr_hash.shift_aff[1] = MPIDR_LEVEL_SHIFT(1) + fs[1] - bits[0];
-	mpidr_hash.shift_aff[2] = MPIDR_LEVEL_SHIFT(2) + fs[2] -
-						(bits[1] + bits[0]);
-	mpidr_hash.shift_aff[3] = MPIDR_LEVEL_SHIFT(3) +
-				  fs[3] - (bits[2] + bits[1] + bits[0]);
-	mpidr_hash.mask = mask;
-	mpidr_hash.bits = bits[3] + bits[2] + bits[1] + bits[0];
-	pr_debug("MPIDR hash: aff0[%u] aff1[%u] aff2[%u] aff3[%u] mask[%#llx] bits[%u]\n",
-		mpidr_hash.shift_aff[0],
-		mpidr_hash.shift_aff[1],
-		mpidr_hash.shift_aff[2],
-		mpidr_hash.shift_aff[3],
-		mpidr_hash.mask,
-		mpidr_hash.bits);
-	/*
-	 * 4x is an arbitrary value used to warn on a hash table much bigger
-	 * than expected on most systems.
-	 */
-	if (mpidr_hash_size() > 4 * num_possible_cpus())
-		pr_warn("Large number of MPIDR hash buckets detected\n");
-	__flush_dcache_area(&mpidr_hash, sizeof(struct mpidr_hash));
+	struct cpuinfo_arm64 *info = this_cpu_ptr(&cpu_data);
+	info->reg_midr = read_cpuid_id();
 }
-#endif
 
 static void __init setup_processor(void)
 {
@@ -218,6 +157,8 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
 {
 	struct boot_param_header *devtree;
 	unsigned long dt_root;
+
+	cpuinfo_store_cpu();
 
 	/* Check we have a non-NULL DT pointer */
 	if (!dt_phys) {
@@ -384,14 +325,12 @@ static int __init arm64_device_init(void)
 }
 arch_initcall(arm64_device_init);
 
-static DEFINE_PER_CPU(struct cpu, cpu_data);
-
 static int __init topology_init(void)
 {
 	int i;
 
 	for_each_possible_cpu(i) {
-		struct cpu *cpu = &per_cpu(cpu_data, i);
+		struct cpu *cpu = &per_cpu(cpu_data.cpu, i);
 		cpu->hotpluggable = 1;
 		register_cpu(cpu, i);
 	}
@@ -407,14 +346,41 @@ static const char *hwcap_str[] = {
 	NULL
 };
 
+#ifdef CONFIG_COMPAT
+static const char *compat_hwcap_str[] = {
+	"swp",
+	"half",
+	"thumb",
+	"26bit",
+	"fastmult",
+	"fpa",
+	"vfp",
+	"edsp",
+	"java",
+	"iwmmxt",
+	"crunch",
+	"thumbee",
+	"neon",
+	"vfpv3",
+	"vfpv3d16",
+	"tls",
+	"vfpv4",
+	"idiva",
+	"idivt",
+	"vfpd32",
+	"lpae",
+	"evtstrm"
+};
+#endif /* CONFIG_COMPAT */
+
 static int c_show(struct seq_file *m, void *v)
 {
-	int i;
-
-	seq_printf(m, "Processor\t: %s rev %d (%s)\n",
-		   cpu_name, read_cpuid_id() & 15, ELF_PLATFORM);
+	int i, j;
 
 	for_each_online_cpu(i) {
+		struct cpuinfo_arm64 *cpuinfo = &per_cpu(cpu_data, i);
+		u32 midr = cpuinfo->reg_midr;
+
 		/*
 		 * glibc reads /proc/cpuinfo to determine the number of
 		 * online processors, looking for lines beginning with
@@ -423,24 +389,35 @@ static int c_show(struct seq_file *m, void *v)
 #ifdef CONFIG_SMP
 		seq_printf(m, "processor\t: %d\n", i);
 #endif
+		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
+			   loops_per_jiffy / (500000UL/HZ),
+			   loops_per_jiffy / (5000UL/HZ) % 100);
+		/*
+		 * Dump out the common processor features in a single line.
+		 * Userspace should read the hwcaps with getauxval(AT_HWCAP)
+		 * rather than attempting to parse this, but there's a body of
+		 * software which does already (at least for 32-bit).
+		 */
+		seq_puts(m, "Features\t:");
+		if (personality(current->personality) == PER_LINUX32) {
+#ifdef CONFIG_COMPAT
+			for (j = 0; compat_hwcap_str[j]; j++)
+				if (COMPAT_ELF_HWCAP & (1 << j))
+					seq_printf(m, " %s", compat_hwcap_str[j]);
+#endif /* CONFIG_COMPAT */
+		} else {
+			for (j = 0; hwcap_str[j]; j++)
+				if (elf_hwcap & (1 << j))
+					seq_printf(m, " %s", hwcap_str[j]);
+		}
+		seq_puts(m, "\n");
+
+		seq_printf(m, "CPU implementer\t: 0x%02x\n", (midr >> 24));
+		seq_printf(m, "CPU architecture: 8\n");
+		seq_printf(m, "CPU variant\t: 0x%x\n", ((midr >> 20) & 0xf));
+		seq_printf(m, "CPU part\t: 0x%03x\n", ((midr >> 4) & 0xfff));
+		seq_printf(m, "CPU revision\t: %d\n\n", (midr & 0xf));
 	}
-
-	/* dump out the processor features */
-	seq_puts(m, "Features\t: ");
-
-	for (i = 0; hwcap_str[i]; i++)
-		if (elf_hwcap & (1 << i))
-			seq_printf(m, "%s ", hwcap_str[i]);
-
-	seq_printf(m, "\nCPU implementer\t: 0x%02x\n", read_cpuid_id() >> 24);
-	seq_printf(m, "CPU architecture: AArch64\n");
-	seq_printf(m, "CPU variant\t: 0x%x\n", (read_cpuid_id() >> 20) & 15);
-	seq_printf(m, "CPU part\t: 0x%03x\n", (read_cpuid_id() >> 4) & 0xfff);
-	seq_printf(m, "CPU revision\t: %d\n", read_cpuid_id() & 15);
-
-	seq_puts(m, "\n");
-
-	seq_printf(m, "Hardware\t: %s\n", machine_name);
 
 	return 0;
 }
