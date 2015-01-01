@@ -133,6 +133,7 @@ static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
 static bool io_is_busy;
 
+#define DOWN_LOW_LOAD_THRESHOLD 5
 #ifdef CONFIG_MODE_AUTO_CHANGE
 struct cpufreq_loadinfo {
 	unsigned int load;
@@ -641,6 +642,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 			if (new_freq < hispeed_freq)
 				new_freq = hispeed_freq;
 		}
+	} else if (cpu_load <= DOWN_LOW_LOAD_THRESHOLD) {
+		new_freq = pcpu->policy->cpuinfo.min_freq;
 	} else {
 		new_freq = choose_freq(pcpu, loadadjfreq);
 
