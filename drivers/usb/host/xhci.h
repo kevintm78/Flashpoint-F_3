@@ -1,3 +1,4 @@
+
 /*
  * xHCI host controller driver
  *
@@ -1260,9 +1261,8 @@ struct xhci_td {
 	struct xhci_segment	*start_seg;
 	union xhci_trb		*first_trb;
 	union xhci_trb		*last_trb;
-
-	/* ZLP received in data stage of a control transfer */
-	bool			zlp_data;
+	/* actual_length of the URB has already been set */
+	bool			urb_length_set;
 };
 
 /* xHCI command default timeout value */
