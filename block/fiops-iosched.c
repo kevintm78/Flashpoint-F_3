@@ -104,7 +104,6 @@ FIOPS_IOC_FNS(prio_changed);
 	blk_add_trace_msg((fiopsd)->queue, "ioc%d " fmt, (ioc)->pid, ##args)
 #define fiops_log(fiopsd, fmt, args...)	\
 	blk_add_trace_msg((fiopsd)->queue, "fiops " fmt, ##args)
-
 enum wl_prio_t fiops_wl_type(short prio_class)
 {
 	if (prio_class == IOPRIO_CLASS_RT)
@@ -405,8 +404,8 @@ static struct fiops_ioc *fiops_select_ioc(struct fiops_data *fiopsd)
 		fiops_log_ioc(fiopsd, ioc,
 				"postpone async, in_flight async %d sync %d",
 				fiopsd->in_flight[0], fiopsd->in_flight[1]);
+			service_tree->count == 1)
 		return NULL;
-	}
 
 	return ioc;
 }
@@ -514,7 +513,6 @@ static void fiops_completed_request(struct request_queue *q, struct request *rq)
 
 	fiops_log_ioc(fiopsd, ioc, "in_flight %d, busy queues %d",
 		ioc->in_flight, fiopsd->busy_queues);
-
 	if (fiopsd->in_flight[0] + fiopsd->in_flight[1] == 0)
 		fiops_schedule_dispatch(fiopsd);
 }
