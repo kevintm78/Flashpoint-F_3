@@ -42,7 +42,6 @@
 bool flg_power_suspended = false;
 struct timeval time_power_suspended;
 struct timeval time_power_resumed;
-
 struct workqueue_struct *suspend_work_queue;
 
 static DEFINE_MUTEX(power_suspend_lock);
@@ -95,6 +94,8 @@ static void power_suspend(struct work_struct *work)
 
 	if (abort)
 		goto abort_suspend;
+	flg_power_suspended = true;
+	do_gettimeofday(&time_power_suspended);
 
 	flg_power_suspended = true;
 	do_gettimeofday(&time_power_suspended);
@@ -131,6 +132,8 @@ static void power_resume(struct work_struct *work)
 
 	if (abort)
 		goto abort_resume;
+	flg_power_suspended = false;
+	do_gettimeofday(&time_power_resumed);
 
 	flg_power_suspended = false;
 	do_gettimeofday(&time_power_resumed);
