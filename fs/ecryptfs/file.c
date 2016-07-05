@@ -282,6 +282,7 @@ static int ecryptfs_mmap(struct file *file, struct vm_area_struct *vma)
 	 * allows recursive mounting, this will need to be extended.
 	 */
 	if (!dentry->d_inode->i_fop->mmap)
+
 		return -ENODEV;
 	return generic_file_mmap(file, vma);
 }
