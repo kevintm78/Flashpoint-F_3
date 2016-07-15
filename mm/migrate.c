@@ -386,7 +386,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
 
 	spin_unlock(&mapping->tree_lock);
 	/* Leave irq disabled to prevent preemption while updating stats */
-		
+
 	/*
 	 * If moved to a different zone then also account
 	 * the page for that zone. Other VM counters will be
