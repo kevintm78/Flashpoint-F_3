@@ -1333,6 +1333,7 @@ int fsync_node_pages(struct f2fs_sb_info *sbi, struct inode *inode,
 	struct page *last_page = NULL;
 	bool marked = false;
 	nid_t ino = inode->i_ino;
+	int nwritten = 0;
 
 	if (atomic) {
 		last_page = last_fsync_dnode(sbi, ino);
@@ -1406,7 +1407,10 @@ continue_unlock:
 				unlock_page(page);
 				f2fs_put_page(last_page, 0);
 				break;
+			} else {
+				nwritten++;
 			}
+
 			if (page == last_page) {
 				f2fs_put_page(page, 0);
 				marked = true;
@@ -1428,6 +1432,9 @@ continue_unlock:
 		unlock_page(last_page);
 		goto retry;
 	}
+
+	if (nwritten)
+		f2fs_submit_merged_bio_cond(sbi, NULL, NULL, ino, NODE, WRITE);
 	return ret ? -EIO: 0;
 }
 
@@ -1437,6 +1444,7 @@ int sync_node_pages(struct f2fs_sb_info *sbi, struct writeback_control *wbc)
 	struct pagevec pvec;
 	int step = 0;
 	int nwritten = 0;
+	int ret = 0;
 
 	pagevec_init(&pvec, 0);
 
@@ -1457,7 +1465,8 @@ next_step:
 
 			if (unlikely(f2fs_cp_error(sbi))) {
 				pagevec_release(&pvec);
-				return -EIO;
+				ret = -EIO;
+				goto out;
 			}
 
 			/*
@@ -1508,6 +1517,8 @@ continue_unlock:
 
 			if (NODE_MAPPING(sbi)->a_ops->writepage(page, wbc))
 				unlock_page(page);
+			else
+				nwritten++;
 
 			if (--wbc->nr_to_write == 0)
 				break;
@@ -1525,7 +1536,10 @@ continue_unlock:
 		step++;
 		goto next_step;
 	}
-	return nwritten;
+out:
+	if (nwritten)
+		f2fs_submit_merged_bio(sbi, NODE, WRITE);
+	return ret;
 }
 
 int wait_on_node_pages_writeback(struct f2fs_sb_info *sbi, nid_t ino)
