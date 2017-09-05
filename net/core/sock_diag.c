@@ -49,7 +49,11 @@ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attrtype)
 }
 EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
 
+<<<<<<< HEAD
 int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
+=======
+int sock_diag_put_filterinfo(struct sock *sk,
+>>>>>>> eac664d... net: Fix ns_capable check in sock_diag_put_filterinfo
 			     struct sk_buff *skb, int attrtype)
 {
 	struct nlattr *attr;
