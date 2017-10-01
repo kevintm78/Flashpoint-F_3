@@ -3747,7 +3747,7 @@ static uint8_t parse_861_short_descriptors(
 		case DBTC_USE_EXTENDED_TAG:
 			ext_tag_code = p_data_u.p_CEA_data_block->
 				payload_u.extended_tag;
-			switch (ext_tag_code.etc) {
+			switch ((int)ext_tag_code.etc) {
 			case ETC_VIDEO_CAPABILITY_DATA_BLOCK:
 				p_video_capability =
 				    (struct video_capability_data_block_t *)

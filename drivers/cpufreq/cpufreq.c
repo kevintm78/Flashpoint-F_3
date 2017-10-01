@@ -1477,7 +1477,7 @@ static unsigned int __cpufreq_get(unsigned int cpu)
 	unsigned int ret_freq = 0;
 	unsigned long flags;
 
-	if (!cpufreq_driver->get || policy == 0)
+	if (!cpufreq_driver->get == 0)
 		return ret_freq;
 
 	read_lock_irqsave(&cpufreq_driver_lock, flags);
