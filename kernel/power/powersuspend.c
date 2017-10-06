@@ -97,9 +97,6 @@ static void power_suspend(struct work_struct *work)
 	flg_power_suspended = true;
 	do_gettimeofday(&time_power_suspended);
 
-	flg_power_suspended = true;
-	do_gettimeofday(&time_power_suspended);
-
 	#ifdef CONFIG_POWERSUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] suspending...\n");
 	#endif

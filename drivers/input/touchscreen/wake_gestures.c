@@ -115,7 +115,7 @@ static DECLARE_DELAYED_WORK(work_tw_timeout, tw_timeout_work);
 static bool flg_sensor_prox_detecting = false;
 
 /* Externals */
-extern bool flg_power_suspended;
+bool flg_power_suspended;
 extern struct timeval time_power_suspended;
 extern struct timeval time_pressed_power;
 extern bool flg_tsp_always_on;
@@ -181,7 +181,7 @@ static void wake_pwrtrigger(void) {
  	if (pwrtrigger_time[0] - pwrtrigger_time[1] < TRIGGER_TIMEOUT)
  		return;
 
-	set_vibrate(vib_strength);
+	//set_vibrate(vib_strength);
 	schedule_work(&wake_presspwr_work);
         return;
 }
