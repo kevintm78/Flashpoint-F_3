@@ -132,9 +132,6 @@ static void power_resume(struct work_struct *work)
 	flg_power_suspended = false;
 	do_gettimeofday(&time_power_resumed);
 
-	flg_power_suspended = false;
-	do_gettimeofday(&time_power_resumed);
-
 	#ifdef CONFIG_POWERSUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] resuming...\n");
 	#endif
@@ -184,8 +181,8 @@ void set_power_suspend_state_autosleep_hook(int new_state)
 	pr_info("[POWERSUSPEND] autosleep resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
 	#endif
 	// Yank555.lu : Only allow autosleep hook changes in autosleep & hybrid mode
-	if (mode == POWER_SUSPEND_AUTOSLEEP || mode == POWER_SUSPEND_HYBRID)
-		set_power_suspend_state(new_state);
+	//if (mode == POWER_SUSPEND_AUTOSLEEP || mode == POWER_SUSPEND_HYBRID)
+		//set_power_suspend_state(new_state);
 }
 
 EXPORT_SYMBOL(set_power_suspend_state_autosleep_hook);

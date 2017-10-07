@@ -115,7 +115,7 @@ static DECLARE_DELAYED_WORK(work_tw_timeout, tw_timeout_work);
 static bool flg_sensor_prox_detecting = false;
 
 /* Externals */
-bool flg_power_suspended;
+extern bool flg_power_suspended;
 extern struct timeval time_power_suspended;
 extern struct timeval time_pressed_power;
 extern bool flg_tsp_always_on;
