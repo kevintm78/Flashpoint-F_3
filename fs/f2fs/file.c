@@ -244,8 +244,6 @@ go_write:
 	up_read(&fi->i_sem);
 
 	if (need_cp) {
-		nid_t pino;
-
 		/* all the dirty node pages should be flushed for POR */
 		ret = f2fs_sync_fs(inode->i_sb, 1);
 

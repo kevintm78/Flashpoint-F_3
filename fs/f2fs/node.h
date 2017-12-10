@@ -345,31 +345,6 @@ static inline nid_t get_nid(struct page *p, int off, bool i)
  *  - Mark cold node blocks in their node footer
  *  - Mark cold data pages in page cache
  */
-<<<<<<< HEAD
-static inline int is_file(struct inode *inode, int type)
-{
-	return F2FS_I(inode)->i_advise & type;
-}
-
-static inline void set_file(struct inode *inode, int type)
-{
-	F2FS_I(inode)->i_advise |= type;
-}
-
-static inline void clear_file(struct inode *inode, int type)
-{
-	F2FS_I(inode)->i_advise &= ~type;
-}
-
-#define file_is_cold(inode)	is_file(inode, FADVISE_COLD_BIT)
-#define file_wrong_pino(inode)	is_file(inode, FADVISE_LOST_PINO_BIT)
-#define file_set_cold(inode)	set_file(inode, FADVISE_COLD_BIT)
-#define file_lost_pino(inode)	set_file(inode, FADVISE_LOST_PINO_BIT)
-#define file_clear_cold(inode)	clear_file(inode, FADVISE_COLD_BIT)
-#define file_got_pino(inode)	clear_file(inode, FADVISE_LOST_PINO_BIT)
-
-=======
->>>>>>> bfc9891... f2fs: catch up to v4.4-rc1
 static inline int is_cold_data(struct page *page)
 {
 	return PageChecked(page);
@@ -387,12 +362,7 @@ static inline void clear_cold_data(struct page *page)
 
 static inline int is_node(struct page *page, int type)
 {
-<<<<<<< HEAD
-	void *kaddr = page_address(page);
-	struct f2fs_node *rn = (struct f2fs_node *)kaddr;
-=======
 	struct f2fs_node *rn = F2FS_NODE(page);
->>>>>>> bfc9891... f2fs: catch up to v4.4-rc1
 	return le32_to_cpu(rn->footer.flag) & (1 << type);
 }
 
@@ -414,11 +384,7 @@ static inline void set_cold_node(struct inode *inode, struct page *page)
 
 static inline void set_mark(struct page *page, int mark, int type)
 {
-<<<<<<< HEAD
-	struct f2fs_node *rn = (struct f2fs_node *)page_address(page);
-=======
 	struct f2fs_node *rn = F2FS_NODE(page);
->>>>>>> bfc9891... f2fs: catch up to v4.4-rc1
 	unsigned int flag = le32_to_cpu(rn->footer.flag);
 	if (mark)
 		flag |= (0x1 << type);

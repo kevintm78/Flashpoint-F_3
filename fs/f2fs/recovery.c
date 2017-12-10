@@ -235,7 +235,6 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
 		}
 		entry->blkaddr = blkaddr;
 
-		err = recover_inode(entry->inode, page);
 		if (err && err != -ENOENT)
 			break;
 next:
@@ -567,7 +566,6 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
 	blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
 
 	/* step #1: find fsynced inode numbers */
-	sbi->por_doing = 1;
 	err = find_fsync_dnodes(sbi, &inode_list);
 	if (err)
 		goto out;
