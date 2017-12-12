@@ -46,5 +46,5 @@ const char linux_banner[] =
 
 const char linux_proc_banner[] =
 	"%s version %s"
-	" (" LINUX_COMPILE_BY "@" LINUX_COMPILE_HOST ")"
+	" (Modest.Kernel_by_kevintm78)"
 	" (" LINUX_COMPILER ") %s\n";
