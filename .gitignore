@@ -3,6 +3,7 @@
 *.ap_
 *.zip
 *.img
+*.sh
 
 # Files for the ART/Dalvik VM
 *.dex
@@ -16,6 +17,8 @@ gen/
 out/
 AIK/
 arm-eabi-4.8/
+arm-eabi-5.3/
+output/
 
 # Gradle files
 .gradle/
