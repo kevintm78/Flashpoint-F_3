@@ -119,6 +119,11 @@ config CPU_FREQ_DEFAULT_GOV_ALUCARD
   	select CPU_FREQ_GOV_ALUCARD
   	help
 
+config CPU_FREQ_DEFAULT_GOV_YANKACTIVE
+ 	bool "yankactive"
+        select CPU_FREQ_GOV_YANKACTIVE
+        help
+
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
@@ -220,6 +225,11 @@ config CPU_FREQ_GOV_CONSERVATIVE
 config CPU_FREQ_GOV_ALUCARD
 	tristate "'alucard' cpufreq governor"
 	depends on CPU_FREQ
+
+config CPU_FREQ_GOV_YANKACTIVE
+	tristate "'yankactive' cpufreq policy governor"
+        depends on CPU_FREQ
+	  help
 
 config CPU_BOOST
 	tristate "Event base short term CPU freq boost"
