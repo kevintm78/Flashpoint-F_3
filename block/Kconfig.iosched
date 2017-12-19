@@ -103,7 +103,14 @@ config IOSCHED_VR
 	default y
 	---help---
 	Requests are chosen according to SSTF with a penalty of rev_penalty
-	for switching head direction.	  
+	for switching head direction.	
+
+config IOSCHED_FIOPS
+	tristate "FIOPS I/O scheduler"
+	default y
+	---help---
+	Requests are chosen according to SSTF with a penalty of rev_penalty
+	for switching head direction.  
 
 config CFQ_GROUP_IOSCHED
 	bool "CFQ Group Scheduling support"
