@@ -466,7 +466,7 @@ static void detect_sweep2wake_h(int x, int y, bool st)
                 x, y, (flg_power_suspended) ? "true" : "false");
 #endif
 	//left->right
-	if (firstx < SWEEP_X_START && single_touch &&
+	if ((firstx < SWEEP_X_START && single_touch) &&
 			((flg_power_suspended && (s2w_switch & SWEEP_RIGHT)) && 
 			(!flg_tw_expired && sttg_tw_timeout > 0 && do_timesince(time_power_suspended) < sttg_tw_timeout)) || 
 			(sttg_tw_timeout == 0 && flg_power_suspended && (s2w_switch & SWEEP_RIGHT))) {

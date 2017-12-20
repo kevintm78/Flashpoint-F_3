@@ -358,7 +358,7 @@ static int max77843_fg_read_soc(struct max77843_fuelgauge_data *fuelgauge)
 	}
 
 	// Extended Battery Mod- by TheLoneWolf20
-	1soc = max77843_fg_read_vfsoc(fuelgauge);
+	soc = max77843_fg_read_vfsoc(fuelgauge);
 	vf_soc = max77843_fg_read_vfsoc(fuelgauge);
 
 #ifdef BATTERY_LOG_MESSAGE
