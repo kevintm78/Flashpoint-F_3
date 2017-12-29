@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ARCH=arm
-export CROSS_COMPILE=$(pwd)/arm-eabi-4.8/bin/arm-eabi-
+export CROSS_COMPILE=$(pwd)/arm-eabi-5.3/bin/arm-eabi-
 mkdir output
 
 make -C $(pwd) O=output apq8084_sec_defconfig VARIANT_DEFCONFIG=apq8084_sec_trlte_eur_defconfig SELINUX_DEFCONFIG=selinux_defconfig
