@@ -30,9 +30,6 @@
 
 #include <linux/list.h>
 
-#define POWER_SUSPEND_AUTOSLEEP
-#define POWER_SUSPEND_HYBRID
-
 #define POWER_SUSPEND_INACTIVE	0
 #define POWER_SUSPEND_ACTIVE	1
 
